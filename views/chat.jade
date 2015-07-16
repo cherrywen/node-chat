@@ -15,10 +15,10 @@ html(lang="zh")
                 label 在线成员
               .formRow.H600#showUsers
           .right
-            .middleForm
+            .middleForm.chatForm#all
               .formHead
-                label 聊天室
-              #chat.H500
+                label#chatName 群聊
+              .H500#chat
                 .formRow.H550#chatInformation
                 .formRow.H50#sendEnformation
                   input#chatMsg(type="text",placeholder="请输入聊天内容",style="width=15px")

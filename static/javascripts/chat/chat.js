@@ -1,20 +1,21 @@
+var socket = io.connect('/');
+var users = [];
+var chatInfos = [];
 $(function(){
-  //login
-  var socket = io.connect('/');
+  mainObj = $('body');
   var showUsersObj = $('#showUsers');
-  var users = [];
   var user = null;
+
+  //login
   $('.setUser').click(function(){
     var nameVal = $('#userName').val();
 
     if(!nameVal){
-      // $('#username').val('');
       alert('昵称不能为空！！!');
     }else{
       dataObj = {
         name:nameVal
       };
-      //send user info to server
       socket.emit('login',dataObj);
       $('.loginForm').hide();
       $('.fade').hide();
@@ -27,31 +28,58 @@ $(function(){
     if(!chatMsgVal){
       alert('内容不能为空！！！');
     }else{
+      var userId = $('.chatForm').attr('id');
       var msgObj = {
+        userId: user.id,
+        receiveUserId: userId,
         name: user.name,
         msg: chatMsgVal,
         time: getTime()
       };
-      socket.emit('sendMessage',msgObj);
+      if($('.chatForm').attr('id') == 'all'){
+        socket.emit('sendMessage', msgObj);
+      }else{
+        if(_.findWhere(users,{id:userId})){
+          socket.emit('sendToOne', msgObj);
+        }else{
+          alert('该用户已下线，无法向其发送消息');
+        }
+      }
       $('#chatMsg').val('');
     }
   });
 
   socket.on('user', function(data){
     user = data;
+    socket.on(user.id, function(msgObj){
+      var chatInfo = chatInfos[msgObj.userId] ? chatInfos[msgObj.userId] : '';
+      chatInfo += '<div><span class="chatUser">' + msgObj.name + '@' + msgObj.time + ' : </span><span class="chatMessage">' + msgObj.msg + '</span></div>';
+      chatInfos[msgObj.userId] = chatInfo;
+      if($('.chatForm').attr('id') == msgObj.userId){
+        $('#chatInformation').html('').append(chatInfo);
+      }
+    });
   });
 
   socket.on('users', function(data){
     users = data;
     var showUsersHtml = '';
     _.each(users,function(user){
-      showUsersHtml += '<div class="showUsers">' + user.name + '</div>';
+      showUsersHtml += '<div class="showUsers" onclick="changeChatPerson(\''+user.id+'\')">' + user.name + '</div>';
     });
     showUsersObj.html('').append(showUsersHtml);
   });
   socket.on('sendMessage', function(msgObj){
-    var chatInfo = '<div><span class="chatUser">' + msgObj.name + '@' + msgObj.time + ' : </span><span class="chatMessage">' + msgObj.msg + '</span></div>';
-    $('#chatInformation').append(chatInfo);
+    var chatInfo = chatInfos['all'] ? chatInfos['all'] : '';
+    chatInfo += '<div><span class="chatUser">' + msgObj.name + '@' + msgObj.time + ' : </span><span class="chatMessage">' + msgObj.msg + '</span></div>';
+    chatInfos['all'] = chatInfo;
+    $('#chatInformation').html('').append(chatInfo);
+  });
+  socket.on('sendToOne', function(msgObj){
+    var chatInfo = chatInfos[msgObj.receiveUserId] ? chatInfos[msgObj.receiveUserId] : '';
+    chatInfo += '<div><span class="chatUser">' + msgObj.name + '@' + msgObj.time + ' : </span><span class="chatMessage">' + msgObj.msg + '</span></div>';
+    chatInfos[msgObj.receiveUserId] = chatInfo;
+    $('#chatInformation').html('').append(chatInfo);
   });
 
   function getTime(){
@@ -65,3 +93,12 @@ $(function(){
     return year + "-" + month + "-" + day + " " + hours + ":" + minutes + ":" + seconds;
   }
 });
+
+function changeChatPerson(userId){
+  var chatUser = _.findWhere(users,{id:userId});
+  var chatNameInfo = userId == 'all' ? '' : 'talk to ';
+  chatNameInfo += chatUser.name;
+  $('#chatName').html(chatNameInfo);
+  $('.chatForm').attr('id',chatUser.id);
+  $('#chatInformation').html('').append(chatInfos[chatUser.id]);
+}

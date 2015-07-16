@@ -5,7 +5,10 @@ var server = require('http').createServer(app);
 var io = require('socket.io')(server);
 var _ = require('underscore');
 
-var users = [];
+var users = [{
+  id: 'all',
+  name: '群聊'
+}];
 
 app.set('view engine', 'jade');
 app.set('views', path.join(__dirname, 'views'));
@@ -27,8 +30,13 @@ io.on('connection', function(socket){
     io.emit('users', users);
   });
   socket.on('sendMessage', function(data){
-    console.log(data);
-    io.emit('sendMessage',data);
+    io.emit('sendMessage', data);
+  });
+  socket.on('sendToOne', function(data){
+    socket.emit('sendToOne', data);
+    if(data.userId != data.receiveUserId){
+      io.emit(data.receiveUserId, data);
+    }
   });
   socket.on('disconnect', function(){
     var user = _.findWhere(users,{id:socket.id});
@@ -40,43 +48,3 @@ io.on('connection', function(socket){
 });
 
 server.listen(3000);
-
-
-// express = require 'express'
-// app = express()
-// timeout = require 'connect-timeout'
-// bodyParser = require 'body-parser'
-// multer = require 'multer'
-// _ = require 'underscore'
-// mongoose = require 'mongoose'
-// session = require 'express-session'
-// cookieParser = require 'cookie-parser'
-// path = require 'path'
-// littleUtil = require 'little-util'
-// littleUtil.requireModules [],true
-
-// mongoose.connect 'mongodb://koala:47017/test'
-
-// app.set 'view engine', 'jade'
-// app.set 'views', path.join(__dirname, 'views')
-
-// app.use bodyParser.json()
-// app.use bodyParser.urlencoded({ extended: true })
-// app.use multer({dest:'./uploads/'})
-// app.use session {secret: 'littleframework', key: 'littleframework', cookie: {maxAge: 1000*60*30}}
-// app.use cookieParser()
-// app.use '/js/', express.static require('path').join(__dirname, 'static/javascripts')
-// app.use '/css/', express.static require('path').join(__dirname, 'static/stylesheets')
-// app.use '/img/', express.static require('path').join(__dirname, 'static/images')
-
-// routers = require './routers'
-
-// initRouters = (routers)->
-//     routers.forEach (routeInfo)->
-//         _.defaults routeInfo,{middleware: [],type: 'get'}
-//         if routeInfo.timeout
-//             routeInfo.middleware.push timeout routeInfo.timeout
-//         app[routeInfo.type] routeInfo.url,routeInfo.middleware,routeInfo.handler
-// initRouters routers
-
-// app.listen 3100
