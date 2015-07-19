@@ -2,16 +2,18 @@ var socket = io.connect('/');
 var users = [];
 var chatInfos = [];
 $(function(){
-  mainObj = $('body');
+  var mainObj = $('body');
   var showUsersObj = $('#showUsers');
   var user = null;
+  var chatInfo = null;
 
+  //获得焦点
+  $('#userName').focus();
   //login
   $('.setUser').click(function(){
     var nameVal = $('#userName').val();
-
     if(!nameVal){
-      alert('昵称不能为空！！!');
+      alert('昵称不能为空！！！');
     }else{
       dataObj = {
         name:nameVal
@@ -20,9 +22,10 @@ $(function(){
       $('.loginForm').hide();
       $('.fade').hide();
       $('.userName').val('');
+      $('#chatMsg').focus();
     }
   });
-
+  //发送信息
   $('#sendMsg').click(function(){
     var chatMsgVal = $('#chatMsg').val();
     if(!chatMsgVal){
@@ -48,39 +51,40 @@ $(function(){
       $('#chatMsg').val('');
     }
   });
-
+  //登录成功
   socket.on('user', function(data){
     user = data;
+    //监听其他用户发送给自己的信息
     socket.on(user.id, function(msgObj){
-      var chatInfo = chatInfos[msgObj.userId] ? chatInfos[msgObj.userId] : '';
-      chatInfo += '<div><span class="chatUser">' + msgObj.name + '@' + msgObj.time + ' : </span><span class="chatMessage">' + msgObj.msg + '</span></div>';
-      chatInfos[msgObj.userId] = chatInfo;
-      if($('.chatForm').attr('id') == msgObj.userId){
-        $('#chatInformation').html('').append(chatInfo);
-      }
+      chageChatInfo(msgObj.userId, msgObj);
     });
   });
-
+  //监听所有用户数
   socket.on('users', function(data){
     users = data;
     var showUsersHtml = '';
     _.each(users,function(user){
       showUsersHtml += '<div class="showUsers" onclick="changeChatPerson(\''+user.id+'\')">' + user.name + '</div>';
     });
-    showUsersObj.html('').append(showUsersHtml);
+    showUsersObj.html(showUsersHtml);
   });
+  //群聊
   socket.on('sendMessage', function(msgObj){
-    var chatInfo = chatInfos['all'] ? chatInfos['all'] : '';
-    chatInfo += '<div><span class="chatUser">' + msgObj.name + '@' + msgObj.time + ' : </span><span class="chatMessage">' + msgObj.msg + '</span></div>';
-    chatInfos['all'] = chatInfo;
-    $('#chatInformation').html('').append(chatInfo);
+    chageChatInfo('all', msgObj);
   });
+  //私聊
   socket.on('sendToOne', function(msgObj){
-    var chatInfo = chatInfos[msgObj.receiveUserId] ? chatInfos[msgObj.receiveUserId] : '';
-    chatInfo += '<div><span class="chatUser">' + msgObj.name + '@' + msgObj.time + ' : </span><span class="chatMessage">' + msgObj.msg + '</span></div>';
-    chatInfos[msgObj.receiveUserId] = chatInfo;
-    $('#chatInformation').html('').append(chatInfo);
+    chageChatInfo(msgObj.receiveUserId, msgObj);
   });
+
+  function chageChatInfo(userId, msgObj){
+    chatInfo = chatInfos[userId] ? chatInfos[userId] : '';
+    chatInfo += '<div><span class="chatUser">' + msgObj.name + '@' + msgObj.time + ' : </span><span class="chatMessage">' + msgObj.msg + '</span></div>';
+    chatInfos[userId] = chatInfo;
+    if(userId == msgObj.receiveUserId || $('.chatForm').attr('id') == userId){
+      $('#chatInformation').html(chatInfo);
+    }
+  }
 
   function getTime(){
     var date = new Date();
@@ -100,5 +104,20 @@ function changeChatPerson(userId){
   chatNameInfo += chatUser.name;
   $('#chatName').html(chatNameInfo);
   $('.chatForm').attr('id',chatUser.id);
-  $('#chatInformation').html('').append(chatInfos[chatUser.id]);
+  $('#chatInformation').html(chatInfos[chatUser.id] || '');
+  $('#chatMsg').focus();
+}
+
+function keywordsMsg(e){
+  var event1 = e || window.event;
+  if(event1.keyCode == 13){
+    $('#sendMsg').click();
+  }
+}
+
+function keywordsUserName(e){
+  var event1 = e || window.event;
+  if(event1.keyCode == 13){
+    $('.setUser').click();
+  }
 }

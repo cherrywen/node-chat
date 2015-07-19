@@ -21,7 +21,7 @@ html(lang="zh")
               .H500#chat
                 .formRow.H550#chatInformation
                 .formRow.H50#sendEnformation
-                  input#chatMsg(type="text",placeholder="请输入聊天内容",style="width=15px")
+                  input#chatMsg(type="text",placeholder="请输入聊天内容",style="width=15px",onkeydown="javascript:keywordsMsg(event);")
                   span
                     .btn#sendMsg 发送
         .loginForm
@@ -30,7 +30,7 @@ html(lang="zh")
                 label 设置聊天昵称
               .formRow.marginT15
                 label 昵称:
-                input#userName(type="text")
+                input#userName(type="text",onkeydown="javascript:keywordsUserName(event);")
               .formBtn
                 .setUser.btn.leftAlign 确定
       .fade
